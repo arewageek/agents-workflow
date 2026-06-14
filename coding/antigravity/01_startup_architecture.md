@@ -30,7 +30,7 @@ The system defines the tools using a pseudo-JSON schema injected directly into t
 
 ## Phase 3: The Environment and Workspace Telemetry
 
-The client executes environment discovery scripts to map the user's local machine state and injects it via the `<user_information>` block. It injects the OS type (linux), the workspace mappings (e.g. `/home/geek/dev/apps/finance/bil -> arewageek/bil`), and the exact location of the App Data Directory.
+The client executes environment discovery scripts to map the user's local machine state and injects it via the `<user_information>` block. It injects the OS type (linux), the workspace mappings (e.g. `/Users/username/projects/my-app -> workspace/my-app`), and the exact location of the App Data Directory.
 
 ---
 
@@ -52,7 +52,7 @@ The exact instruction the system gives me is: *"If a skill seems relevant to you
 
 The orchestrator injects historical data to simulate memory:
 1. **The Knowledge Item (KI) Index:** Injects summaries of the most recently accessed KIs from `<appDataDir>/knowledge/`.
-2. **Conversation History Rollup:** Injects a reverse-chronological list of previous conversation UUIDs and summaries (e.g., Influencer Dashboard, Zyrro API work).
+2. **Conversation History Rollup:** Injects a reverse-chronological list of previous conversation UUIDs and summaries (e.g., Influencer Dashboard, My-App API work).
 
 ---
 

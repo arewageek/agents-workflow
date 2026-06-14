@@ -13,9 +13,9 @@ Here is exactly how the system circumvents this limitation to "browse" the inter
 When you ask the AI a question about a new documentation update, the system executes a precise fetch-and-summarize loop.
 
 ### 1. The Realization in the Cloud
-The LLM processes your prompt and its internal weights determine that it lacks the necessary facts (e.g., "I don't know the Prisma 7.8.0 syntax"). 
+The LLM processes your prompt and its internal weights determine that it lacks the necessary facts (e.g., "I don't know the Stripe API v2 syntax"). 
 It generates a highly specific JSON payload intended for the IDE:
-`call:default_api:search_web{query: "\"PrismaNeonHttp\" \"PrismaClient\" site:prisma.io"}`
+`call:default_api:search_web{query: "\"StripePaymentIntent\" \"StripeWebhook\" site:stripe.com/docs"}`
 
 The moment this string is generated, the LLM physically halts. It goes to sleep.
 
@@ -34,7 +34,7 @@ The LLM wakes up and reads the snippets.
 
 ### 5. Chaining for Deep Scrapes (`read_url_content`)
 If the LLM realizes the snippet isn't enough, it initiates a second phase. It generates a new tool call using a URL it found in the previous step:
-`call:default_api:read_url_content{Url: "https://www.prisma.io/docs/neon-http"}`
+`call:default_api:read_url_content{Url: "https://stripe.com/docs/webhooks"}`
 
 The LLM goes to sleep again. 
 Your IDE intercepts this command. It performs a direct HTTP GET request to that specific URL. It pulls down the raw HTML of the entire webpage. 
@@ -112,20 +112,20 @@ Below are the exact literal payload structures sent over the network between the
 **1. LLM Generates Call:**
 ```json
 call:default_api:search_web{
-  "query": "PrismaNeonHttp Cloudflare limit"
+  "query": "StripePaymentIntent Cloudflare limit"
 }
 ```
 
 **2. IDE Injects Response (The Search API Return):**
 ```xml
 <response:default_api:search_web>
-## Search Results for: "PrismaNeonHttp Cloudflare limit"
+## Search Results for: "StripePaymentIntent Cloudflare limit"
 
-1. [Prisma Serverless Edge Networking](https://www.prisma.io/docs/serverless)
-   When using Prisma with Cloudflare Workers, PrismaNeonHttp provides a stateless connection wrapper that bypasses WebSocket pool limits...
+1. [Stripe Idempotency Keys](https://stripe.com/docs/api/idempotent_requests)
+   When using Prisma with Cloudflare Workers, StripePaymentIntent provides a stateless connection wrapper that bypasses WebSocket pool limits...
 
-2. [GitHub Issues: Neon Adapter Hangs](https://github.com/prisma/prisma/issues/1234)
-   A known issue in 7.8.0 requires passing an empty object {} to the constructor to avoid TypeScript mismatch errors in Hono...
+2. [Stripe API: Webhook Timing Issues](https://github.com/stripe/stripe-node/issues/567)
+   A common mistake is parsing the JSON body before passing it to the constructEvent function; Stripe requires the raw, unparsed string buffer...
 </response>
 ```
 
@@ -133,20 +133,20 @@ call:default_api:search_web{
 **1. LLM Generates Call:**
 ```json
 call:default_api:read_url_content{
-  "Url": "https://www.prisma.io/docs/serverless"
+  "Url": "https://stripe.com/docs/api/idempotent_requests"
 }
 ```
 
 **2. IDE Injects Response (HTML to Markdown):**
 ```xml
 <response:default_api:read_url_content>
-# Prisma Serverless Edge Networking
+# Stripe Idempotency Keys
 *Last updated: June 2024*
 
 To instantiate the HTTP driver:
 ```typescript
-import { PrismaNeonHttp } from '@prisma/adapter-neon'
-const adapter = new PrismaNeonHttp(connectionString, {})
+import { StripePaymentIntent } from '@prisma/adapter-neon'
+const adapter = new StripePaymentIntent(connectionString, {})
 ```
 [...rest of the parsed webpage...]
 </response>
@@ -157,8 +157,8 @@ const adapter = new PrismaNeonHttp(connectionString, {})
 ```json
 call:default_api:browser_subagent{
   "TaskName": "Verify Cloudflare Login Route",
-  "Task": "Navigate to http://localhost:3000/login. Wait for the DOM. Type 'admin@zyrro.app' into the email field and 'test' into the password field. Click the primary submit button. Wait 3 seconds. Report if the URL changed to /dashboard or if an error span exists.",
-  "RecordingName": "zyrro_login_test"
+  "Task": "Navigate to http://localhost:3000/login. Wait for the DOM. Type 'admin@example.com' into the email field and 'test' into the password field. Click the primary submit button. Wait 3 seconds. Report if the URL changed to /dashboard or if an error span exists.",
+  "RecordingName": "app_login_test"
 }
 ```
 
@@ -169,7 +169,7 @@ Subagent completed the task successfully.
 
 Task Summary:
 - Navigated to `http://localhost:3000/login`.
-- Found input field `[name='email']` and typed 'admin@zyrro.app'.
+- Found input field `[name='email']` and typed 'admin@example.com'.
 - Found input field `[type='password']` and typed 'test'.
 - Clicked `<button type="submit">Login</button>`.
 - Waited 3 seconds.
@@ -178,6 +178,6 @@ Final State:
 - Current URL: `http://localhost:3000/login`
 - Error observed in DOM: `<span class="text-red-500">Invalid credentials. Please try again.</span>`
 
-Recording saved to: /home/geek/.gemini/antigravity/artifacts/zyrro_login_test.webp
+Recording saved to: /Users/username/.gemini/antigravity/artifacts/app_login_test.webp
 </response>
 ```

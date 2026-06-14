@@ -35,7 +35,7 @@ After the `thought` block concludes, the model generates a strict, serialized JS
 **Crucially, the moment the LLM generates this tool string, inference halts.** The model stops generating text.
 
 ### 3.2 Client Interception
-The IDE client sitting on your local machine intercepts this tool request. The LLM itself cannot read your hard drive—it merely politely asks the IDE to do it. The IDE executes the requested native function (e.g., reading `utils/prisma.ts` from disk).
+The IDE client sitting on your local machine intercepts this tool request. The LLM itself cannot read your hard drive—it merely politely asks the IDE to do it. The IDE executes the requested native function (e.g., reading `src/components/AuthModal.tsx` from disk).
 
 ### 3.3 Payload Re-Injection
 The IDE takes the result of the tool execution (the actual file contents, or the terminal output), wraps it in a `response` block, appends it to the context window, and fires the entire massive payload *back* to the inference engine.
@@ -86,8 +86,8 @@ Because the inference server is completely stateless and external, it has absolu
 Here is the exact mechanism of how code is fetched, read, and modified:
 
 ### Step 1: The Blind Request
-When you say "edit my prisma file", the server relies on the `<ADDITIONAL_METADATA>` block to know what file you currently have open. It then generates a tool call asking for the file: 
-`call:default_api:view_file{AbsolutePath: "/home/geek/.../prisma.ts"}`
+When you say "edit my auth modal", the server relies on the `<ADDITIONAL_METADATA>` block to know what file you currently have open. It then generates a tool call asking for the file: 
+`call:default_api:view_file{AbsolutePath: "/Users/username/.../AuthModal.tsx"}`
 
 ### Step 2: The IDE Upload
 The server halts. Your local IDE reads the file from your hard drive, converts the raw code into a text string, and injects it into a `<response>` XML block. The IDE then uploads that exact code string back to the server as part of the massive JSON conversation payload. 
@@ -96,7 +96,7 @@ The server halts. Your local IDE reads the file from your hard drive, converts t
 
 ### Step 3: The Regex/AST Patch Generation
 Once the code string is in the context window, the LLM analyzes it. To edit it, the server does not "save" the file. Instead, the model generates a highly specific JSON patch request:
-`call:default_api:replace_file_content{StartLine: 20, EndLine: 25, TargetContent: "let adapter = ...", ReplacementContent: "adapter = new PrismaNeonHttp(...)"}`
+`call:default_api:replace_file_content{StartLine: 20, EndLine: 25, TargetContent: "const Modal = () => ...", ReplacementContent: "export const Modal = () => <dialog>..."}`
 
 ### Step 4: The Local Execution
 The IDE client intercepts this JSON payload. It acts as the local agent. It calculates the line numbers, attempts to match the exact `TargetContent` string against your local file, and applies the patch directly to your hard drive. 
@@ -109,10 +109,10 @@ The IDE client intercepts this JSON payload. It acts as the local agent. It calc
 
 If the server is blind, how do I know what your folders look like? **I don't. I have to ask the IDE to map them for me.**
 
-When the session starts, the only spatial awareness I have is the root workspace URI (e.g., `/home/geek/dev/apps/finance/bil`), which is injected in the `user_information` block. I do not inherently know what is inside that folder.
+When the session starts, the only spatial awareness I have is the root workspace URI (e.g., `/Users/username/projects/my-app`), which is injected in the `user_information` block. I do not inherently know what is inside that folder.
 
 To find out, I must generate a specific tool call to the IDE:
-`call:default_api:list_dir{DirectoryPath: "/home/geek/dev/apps/finance/bil"}`
+`call:default_api:list_dir{DirectoryPath: "/Users/username/projects/my-app"}`
 
 The local IDE executes this request and returns a JSON array detailing every file and sub-folder, including relative paths and recursive file sizes. If I need to hunt for a specific module, I either generate recursive `list_dir` commands to walk down the tree, or I generate a `grep_search` command to ask the IDE to use `ripgrep` to find a specific string across the entire hard drive. 
 
@@ -133,7 +133,7 @@ Here is the exact structural composition of the data sent to the cloud:
   "system_instruction": {
     "parts": [
       {
-        "text": "<identity>\nYou are Antigravity...\n</identity>\n<web_application_development>\n...\n</web_application_development>\n<user_information>\nThe USER's OS version is linux.\nWorkspace: /home/geek/dev/apps/finance/bil\nApp Data: /home/geek/.gemini/antigravity\n...</user_information>\n<skills>\n- user-preferences (/home/geek/.../SKILL.md): Strict behavioral rules...\n</skills>"
+        "text": "<identity>\nYou are Antigravity...\n</identity>\n<web_application_development>\n...\n</web_application_development>\n<user_information>\nThe USER's OS version is linux.\nWorkspace: /Users/username/projects/my-app\nApp Data: /Users/username/.gemini/antigravity\n...</user_information>\n<skills>\n- user-preferences (/Users/username/.../SKILL.md): Strict behavioral rules...\n</skills>"
       }
     ]
   },
@@ -168,7 +168,7 @@ Here is the exact structural composition of the data sent to the cloud:
       "role": "user",
       "parts": [
         {
-          "text": "<ADDITIONAL_METADATA>\nThe current local time is: 2026-06-14T22:22:55+01:00.\nActive Document: /home/geek/dev/apps/finance/bil/.agent/antigravity_first_prompt_execution.md (LANGUAGE_MARKDOWN)\nCursor is on line: 105\nOther open documents: ...\nRunning terminal commands: bun dev (running for 3h7m21s)\n</ADDITIONAL_METADATA>\n\n<USER_REQUEST>\ninclude the sttructure of the data sent to the cloud and exactly what was attached to it and how you're able to know what my folder structure looks like without guessing?\n</USER_REQUEST>\n\n<EPHEMERAL_MESSAGE>\n<bash_command_reminder> CRITICAL INSTRUCTION 1: You may have access to a variety of tools at your disposal... NEVER run cat inside a bash command... </bash_command_reminder>\n</EPHEMERAL_MESSAGE>"
+          "text": "<ADDITIONAL_METADATA>\nThe current local time is: 2026-06-14T22:22:55+01:00.\nActive Document: /Users/username/projects/my-app/.agent/02_first_prompt_execution.md (LANGUAGE_MARKDOWN)\nCursor is on line: 105\nOther open documents: ...\nRunning terminal commands: bun dev (running for 3h7m21s)\n</ADDITIONAL_METADATA>\n\n<USER_REQUEST>\ninclude the sttructure of the data sent to the cloud and exactly what was attached to it and how you're able to know what my folder structure looks like without guessing?\n</USER_REQUEST>\n\n<EPHEMERAL_MESSAGE>\n<bash_command_reminder> CRITICAL INSTRUCTION 1: You may have access to a variety of tools at your disposal... NEVER run cat inside a bash command... </bash_command_reminder>\n</EPHEMERAL_MESSAGE>"
         }
       ]
     }
